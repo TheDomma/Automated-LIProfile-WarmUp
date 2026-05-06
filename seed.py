@@ -4,7 +4,7 @@ from db.database import init_db, get_connection
 init_db()
 
 # Replace this with your actual GoLogin Profile ID!
-TEST_PROFILE_ID = "YOUR_GOLOGIN_PROFILE_ID_HERE"
+TEST_PROFILE_ID = "6842c6d0fe1416bc8d9af8e8"
 
 conn = get_connection()
 cursor = conn.cursor()

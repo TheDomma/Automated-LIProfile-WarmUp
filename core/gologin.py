@@ -1,38 +1,50 @@
-import requests
 import logging
-from config import GOLOGIN_API_URL
+from gologin import GoLogin
+from config import GOLOGIN_API_TOKEN
 
 logger = logging.getLogger(__name__)
 
+# We keep track of active profiles here so we can close them cleanly
+_active_gl_instances = {}
+
 def start_profile(profile_id: str) -> str:
     """
-    Calls GoLogin local API to start the profile and returns the websocket URL.
+    Uses the official GoLogin Python SDK to start the profile.
     """
-    url = f"{GOLOGIN_API_URL}/browser/start-profile?profileId={profile_id}"
-    logger.info(f"Starting GoLogin profile: {profile_id}")
+    logger.info(f"Starting GoLogin profile via SDK: {profile_id}")
     
-    response = requests.get(url, timeout=30)
-    response.raise_for_status()
+    # Initialize the official GoLogin wrapper
+    gl = GoLogin({
+        "token": GOLOGIN_API_TOKEN,
+        "profile_id": profile_id,
+    })
     
-    data = response.json()
-    ws_url = data.get("wsUrl")
+    # gl.start() launches the browser and returns the debugger address
+    debugger_address = gl.start()
     
-    if not ws_url:
-        raise ValueError("WebSocket URL not returned from GoLogin API")
+    if not debugger_address:
+        raise ValueError("Failed to get debugger address from GoLogin")
         
-    return ws_url
+    _active_gl_instances[profile_id] = gl
+    
+    # Playwright connects over this HTTP endpoint
+    return f"http://{debugger_address}"
 
 def stop_profile(profile_id: str) -> bool:
     """
-    Calls GoLogin local API to stop the profile.
+    Stops the profile using the stored GoLogin instance.
     """
-    url = f"{GOLOGIN_API_URL}/browser/stop-profile?profileId={profile_id}"
     logger.info(f"Stopping GoLogin profile: {profile_id}")
     
-    try:
-        response = requests.get(url, timeout=30)
-        response.raise_for_status()
-        return True
-    except Exception as e:
-        logger.error(f"Failed to stop profile {profile_id}: {e}")
+    gl = _active_gl_instances.get(profile_id)
+    if gl:
+        try:
+            gl.stop()
+            del _active_gl_instances[profile_id]
+            return True
+        except Exception as e:
+            logger.error(f"Failed to stop profile {profile_id}: {e}")
+            return False
+    else:
+        logger.error(f"No active GoLogin instance found for profile {profile_id}")
         return False

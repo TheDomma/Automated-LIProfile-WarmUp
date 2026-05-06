@@ -25,7 +25,9 @@ def schedule_daily_jobs(scheduler: AsyncIOScheduler):
     
     for profile_id in profiles:
         # Schedule between now + 5 mins and now + 8 hours
-        minutes_offset = random.randint(5, 480)
+        # minutes_offset = random.randint(5, 480)
+        # Schedule immediately for testing
+        minutes_offset = 0
         run_time = now + timedelta(minutes=minutes_offset)
         
         scheduler.add_job(

@@ -27,12 +27,23 @@ async def check_page_health(page: Page) -> Tuple[bool, str]:
             if await page.locator(f'h1:has-text("{text}")').count() > 0:
                 return False, "RESTRICTED"
                 
-        # Check for healthy state indicator (Global Nav or Feed)
-        if await page.locator("#global-nav").count() > 0 or await page.locator(".feed-shared-update-v2").count() > 0:
+        # Check for healthy state indicator (Global Nav, Feed, or App Outlet)
+        if (await page.locator("#global-nav").count() > 0 or 
+            await page.locator(".feed-shared-update-v2").count() > 0 or 
+            await page.locator(".scaffold-layout").count() > 0 or
+            "feed" in current_url):
             return True, "HEALTHY"
             
-        return False, "UNKNOWN_DOM_STATE"
+        # If we reach here, we are in an unknown state.
+        page_title = await page.title()
+        logger.warning(f"Unknown DOM State. URL: {current_url} | Title: {page_title}")
         
+        # Take a screenshot to help debug what LinkedIn is actually showing
+        await page.screenshot(path="debug_unknown_state.png", full_page=True)
+        logger.info("Saved screenshot to debug_unknown_state.png for manual review.")
+        
+        return False, "UNKNOWN_DOM_STATE"
+
     except Exception as e:
         logger.error(f"Error during Health Gate check: {e}")
         return False, "HEALTH_CHECK_ERROR"
