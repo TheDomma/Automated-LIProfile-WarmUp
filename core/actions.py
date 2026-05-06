@@ -7,18 +7,35 @@ logger = logging.getLogger(__name__)
 
 async def simulate_human_scroll(page: Page):
     """
-    Simulates a human slowly scrolling down the feed using Javascript window.scrollBy.
-    This guarantees scrolling even if the page doesn't have focus.
+    Simulates a human slowly scrolling down the feed by hovering over posts and using the mouse wheel.
+    This ensures the scroll events target the correct feed container.
     """
     scrolls = random.randint(3, 7)
-    logger.info(f"Simulating {scrolls} scroll actions using JS window.scrollBy.")
+    logger.info(f"Simulating {scrolls} scroll actions by hovering and wheeling.")
     
     for i in range(scrolls):
-        scroll_amount = random.randint(400, 800)
-        
-        # We use JS scrollBy which bypasses any focus or mouse interception issues
-        await page.evaluate(f"window.scrollBy({{top: {scroll_amount}, left: 0, behavior: 'smooth'}});")
-        
+        try:
+            # Find all feed posts currently loaded
+            posts = page.locator(".feed-shared-update-v2")
+            count = await posts.count()
+            
+            if count > 0:
+                # Hover over the last visible post to ensure our mouse is over the feed container
+                target_index = min((i + 1), count - 1)
+                await posts.nth(target_index).hover(timeout=5000)
+            
+            # Now that the mouse is firmly over the feed, simulate the mouse wheel
+            scroll_amount = random.randint(400, 800)
+            await page.mouse.wheel(0, scroll_amount)
+            
+        except Exception as e:
+            logger.debug(f"Hover/Wheel failed, trying fallback: {e}")
+            # Fallback to center-screen wheel
+            viewport = page.viewport_size
+            if viewport:
+                await page.mouse.move(viewport["width"] / 2, viewport["height"] / 2)
+                await page.mouse.wheel(0, 600)
+            
         # Random human pause to "read"
         pause = random.uniform(2.0, 7.0)
         logger.info(f"Scroll {i+1}/{scrolls} complete. Pausing for {pause:.1f} seconds...")
