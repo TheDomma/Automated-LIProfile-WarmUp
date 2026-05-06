@@ -7,20 +7,17 @@ logger = logging.getLogger(__name__)
 
 async def simulate_human_scroll(page: Page):
     """
-    Simulates a human slowly scrolling down the feed using keyboard inputs.
+    Simulates a human slowly scrolling down the feed using Javascript window.scrollBy.
+    This guarantees scrolling even if the page doesn't have focus.
     """
     scrolls = random.randint(3, 7)
-    logger.info(f"Simulating {scrolls} scroll actions using the keyboard.")
+    logger.info(f"Simulating {scrolls} scroll actions using JS window.scrollBy.")
     
-    # 1. Click the center of the screen to ensure the feed has focus
-    viewport = page.viewport_size
-    if viewport:
-        await page.mouse.click(viewport["width"] / 2, viewport["height"] / 2)
-        await asyncio.sleep(1)
-    
-    # 2. Use PageDown to natively scroll, bypassing LinkedIn's custom div containers
     for i in range(scrolls):
-        await page.keyboard.press("PageDown")
+        scroll_amount = random.randint(400, 800)
+        
+        # We use JS scrollBy which bypasses any focus or mouse interception issues
+        await page.evaluate(f"window.scrollBy({{top: {scroll_amount}, left: 0, behavior: 'smooth'}});")
         
         # Random human pause to "read"
         pause = random.uniform(2.0, 7.0)
