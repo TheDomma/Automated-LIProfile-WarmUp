@@ -13,12 +13,17 @@ async def check_page_health(page: Page) -> Tuple[bool, str]:
     
     try:
         # Check URL for obvious logged-out states
-        current_url = page.url
-        if "login" in current_url or "signup" in current_url:
+        current_url = page.url.lower()
+        if "login" in current_url or "signup" in current_url or "checkpoint/lg/sign-in" in current_url:
             return False, "LOGGED_OUT"
             
         # Check for Captcha / Checkpoint
-        if await page.locator("#captcha-internal").count() > 0 or await page.locator(".checkpoint-challenge").count() > 0:
+        if (
+            await page.locator("#captcha-internal").count() > 0
+            or await page.locator(".checkpoint-challenge").count() > 0
+            or await page.locator("form#captcha-challenge").count() > 0
+            or await page.locator("[action*='checkpoint/challenge']").count() > 0
+        ):
             return False, "CAPTCHA_DETECTED"
             
         # Check for Restrictions
@@ -31,7 +36,7 @@ async def check_page_health(page: Page) -> Tuple[bool, str]:
         if (await page.locator("#global-nav").count() > 0 or 
             await page.locator(".feed-shared-update-v2").count() > 0 or 
             await page.locator(".scaffold-layout").count() > 0 or
-            "feed" in current_url):
+            "linkedin.com/feed" in current_url):
             return True, "HEALTHY"
             
         # If we reach here, we are in an unknown state.
