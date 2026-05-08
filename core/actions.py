@@ -8,6 +8,34 @@ from playwright.async_api import Error, Page, TimeoutError as PlaywrightTimeoutE
 
 logger = logging.getLogger(__name__)
 
+v1-stable-bot
+async def simulate_human_scroll(page: Page):
+    """
+    Simulates a human slowly scrolling down the feed.
+    Uses window.scrollBy for more reliable scrolling across different layouts.
+    """
+    scrolls = random.randint(3, 7)
+    logger.info(f"Simulating {scrolls} scroll actions.")
+    
+    for i in range(scrolls):
+        try:
+            # Ensure page is focused
+            await page.evaluate("window.focus()")
+            
+            # Use smooth scrolling via window.scrollBy
+            scroll_amount = random.randint(400, 800)
+            await page.evaluate(f"window.scrollBy({{top: {scroll_amount}, behavior: 'smooth'}});")
+            
+        except Exception as e:
+            logger.debug(f"Smooth scroll failed, trying fallback: {e}")
+            # Fallback to keyboard PageDown
+            await page.keyboard.press("PageDown")
+            
+        # Random human pause to "read"
+        pause = random.uniform(2.0, 7.0)
+        logger.info(f"Scroll {i+1}/{scrolls} complete. Pausing for {pause:.1f} seconds...")
+        await asyncio.sleep(pause)
+=======
 ScrollMode = Literal["keyboard", "wheel", "javascript"]
 
 
@@ -129,7 +157,7 @@ async def simulate_human_feed_browsing(page: Page, duration_seconds: int | None 
             long_pause = random.uniform(8.0, 18.0)
             logger.info("Taking longer read pause: %.1fs", long_pause)
             await asyncio.sleep(long_pause)
-
+main
 
 async def perform_random_action(page: Page):
     """Passive behavior entrypoint with robust state checks."""
