@@ -31,8 +31,12 @@ async def run_profile_warmup(profile_id: str):
         
         # 3. Navigate to LinkedIn
         logger.info("Navigating to LinkedIn...")
-        await page.goto("https://www.linkedin.com/feed/", timeout=30000, wait_until="domcontentloaded")
-        await asyncio.sleep(3) # Let UI settle
+        await page.goto("https://www.linkedin.com/feed/", timeout=45000, wait_until="domcontentloaded")
+        try:
+            await page.wait_for_load_state("networkidle", timeout=10000)
+        except Exception:
+            logger.info("networkidle wait timed out on feed load; continuing.")
+        await asyncio.sleep(2)  # Let UI settle
         
         # 4. Health Gate
         is_healthy, reason = await check_page_health(page)
